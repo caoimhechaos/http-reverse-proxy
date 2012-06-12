@@ -1,0 +1,24 @@
+package main;
+
+message PortConfig {
+	required uint32 port = 1;
+	optional string ssl_cert_path = 2;
+	optional string ssl_key_path = 3;
+}
+
+message Backend {
+	required string host = 1;
+	required uint32 port = 2;
+}
+
+message TargetConfig {
+	repeated string http_host = 1;
+	repeated Backend be = 2;
+}
+
+message ReverseProxyConfig {
+	repeated PortConfig port_config = 1;
+	repeated TargetConfig target_config = 2;
+
+	optional Backend forward_all = 3;
+}
