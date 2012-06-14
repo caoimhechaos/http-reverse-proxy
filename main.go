@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"sync"
 )
@@ -22,7 +21,6 @@ type ReqHandler struct {
 // Default Request Handler
 func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var target *TargetConfig = this.VHostConfig[r.Host]
-	var client *httputil.ClientConn
 	
 	if target == nil {
 		host, _, err := net.SplitHostPort(r.Host)
@@ -40,27 +38,12 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, be := range(target.Be) {
 		var dest string = net.JoinHostPort(*be.Host,
 			fmt.Sprintf("%d", *be.Port))
-		conn, err := net.Dial("tcp", dest)
+		conn, err := NewBackendConnection(dest)
 
 		if err == nil {
-			client = httputil.NewClientConn(conn, nil)
-			res, err := client.Do(r)
-			
-			if err == nil {
-				for key, values := range(res.Header) {
-					for _, value := range(values) {
-						w.Header().Add(key, value)
-					}
-				}
-				w.WriteHeader(res.StatusCode)
-				_, err = io.Copy(w, res.Body)
-				if err != nil {
-					log.Print("Unable to send response to client: " +
-						err.Error())
-				}
-				res.Body.Close()
-				return
-			} else {
+			err := conn.Do(r, w)
+
+			if err != nil {
 				log.Print("Error sending request to " + dest + ": " +
 					err.Error())
 			}
@@ -115,7 +98,13 @@ func main() {
 			srv.Addr = ":" + fmt.Sprint(*p.Port)
 			srv.Handler = handler
 
-			if err = srv.ListenAndServe(); err != nil {
+			if p.SslCertPath != nil && p.SslKeyPath != nil {
+				err = srv.ListenAndServeTLS(*p.SslCertPath, *p.SslKeyPath)
+			} else {
+				err = srv.ListenAndServe()
+			}
+
+			if err != nil {
 				log.Print(err)
 			}
 			
