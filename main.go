@@ -15,41 +15,69 @@ import (
 
 type ReqHandler struct {
 	PortConfig *PortConfig
-	VHostConfig map[string]*TargetConfig
+	BackendMap map[string]*TargetsSpec
+}
+
+type TargetsSpec struct {
+	Backends []*BackendConnection
+	lru int
+}
+
+func (this *TargetsSpec) GetNextConnection() *BackendConnection {
+	if this.lru >= len(this.Backends) - 1 {
+		this.lru = 0
+		return this.Backends[this.lru]
+	}
+	this.lru = this.lru + 1
+	return this.Backends[this.lru]
 }
 
 // Default Request Handler
 func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var target *TargetConfig = this.VHostConfig[r.Host]
+	var targets *TargetsSpec = this.BackendMap[r.Host]
+	var be, initbe *BackendConnection
 	
-	if target == nil {
+	if targets == nil {
 		host, _, err := net.SplitHostPort(r.Host)
 		if err == nil {
-			target = this.VHostConfig[host]
+			targets = this.BackendMap[host]
 		}
 	}
 
-	if target == nil {
+	if targets == nil {
 		http.Error(w, "Host not configured", http.StatusServiceUnavailable)
 		log.Print("Received request for unknown host " + r.Host)
 		return
 	}
 
-	for _, be := range(target.Be) {
-		var dest string = net.JoinHostPort(*be.Host,
-			fmt.Sprintf("%d", *be.Port))
-		conn, err := NewBackendConnection(dest)
+	// We don't want to terminate the connection to our backend, so let's
+	// leave it up to our HTTP client.
+	r.Header.Del("Connection")
+
+	initbe = targets.GetNextConnection()
+	be = initbe
+	for {
+		err := be.Do(r, w)
 
 		if err == nil {
-			err := conn.Do(r, w)
-
-			if err != nil {
-				log.Print("Error sending request to " + dest + ": " +
-					err.Error())
-			}
+			return
 		} else {
-			log.Print("Error connecting to " + dest + ": " +
-				err.Error())
+			log.Print("Error sending request to backend",
+				be.String(), ": ", err.Error())
+			go be.CheckAndReconnect(err)
+		}
+
+		for {
+			be = targets.GetNextConnection()
+			if be == initbe {
+				break
+			}
+			if be.Ready() {
+				break
+			}
+		}
+		if be == initbe {
+			break
 		}
 	}
 }
@@ -57,7 +85,7 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var filename = flag.String("config", "", "Path to configuration file")
 	var config = new(ReverseProxyConfig)
-	var vhostconfig = make(map[string]*TargetConfig)
+	var backendmap = make(map[string]*TargetsSpec)
 	var conffile io.Reader
 	var wg sync.WaitGroup
 	var data []byte
@@ -81,8 +109,27 @@ func main() {
 	}
 	
 	for _, target := range(config.TargetConfig) {
+		var spec *TargetsSpec = new(TargetsSpec)
+		var be_list []*BackendConnection
+
+		for _, backend := range(target.Be) {
+			var dest string = net.JoinHostPort(*backend.Host,
+				fmt.Sprintf("%d", *backend.Port))
+			var conn *BackendConnection = NewBackendConnection(dest)
+
+			if err != nil {
+				log.Printf("Unable to connect to %s: %s",
+					dest, err)
+			} else {
+				log.Print("Established backend connection to ",
+					dest)
+				be_list = append(be_list, conn)
+			}
+		}
+
 		for _, host := range(target.HttpHost) {
-			vhostconfig[host] = target
+			spec.Backends = be_list
+			backendmap[host] = spec
 		}
 	}
 
@@ -93,7 +140,7 @@ func main() {
 			srv := new(http.Server)
 			handler := new(ReqHandler)
 			handler.PortConfig = p
-			handler.VHostConfig = vhostconfig
+			handler.BackendMap = backendmap
 
 			srv.Addr = ":" + fmt.Sprint(*p.Port)
 			srv.Handler = handler
@@ -107,7 +154,7 @@ func main() {
 			if err != nil {
 				log.Print(err)
 			}
-			
+
 			wg.Done()
 		}(port)
 	}
