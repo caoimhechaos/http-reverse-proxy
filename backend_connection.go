@@ -21,7 +21,7 @@ type BackendConnection struct {
 
 func NewBackendConnection(dest string) *BackendConnection {
 	var be = &BackendConnection{
-		dest:       dest,
+		dest: dest,
 	}
 	go be.CheckAndReconnect(nil)
 	return be
@@ -39,7 +39,7 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 	}
 	be.ready = false
 	be.tcpConn, err = net.DialTimeout("tcp", be.dest,
-		(2 << be.connectionAttempt) * time.Second)
+		(2<<be.connectionAttempt)*time.Second)
 	if err != nil {
 		log.Print("Failed to connect to ", be.dest, ": ", err)
 		be.connectionAttempt = be.connectionAttempt + 1
@@ -87,7 +87,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter) error 
 	log.Print("Request to ", req.URL.String(), " took ", passed)
 	log.Print(req.Host, " ", req.RemoteAddr, " - - [",
 		begin.UTC().Format("02/01/2006:15:04:05 -0700"), "] ",
-		strconv.Quote(req.Method + " " + req.RequestURI + " " + req.Proto),
+		strconv.Quote(req.Method+" "+req.RequestURI+" "+req.Proto),
 		" ", res.StatusCode, res.ContentLength, " ",
 		strconv.Quote(req.Referer()), " ", strconv.Quote(req.UserAgent()))
 

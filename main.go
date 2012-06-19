@@ -20,11 +20,11 @@ type ReqHandler struct {
 
 type TargetsSpec struct {
 	Backends []*BackendConnection
-	lru int
+	lru      int
 }
 
 func (this *TargetsSpec) GetNextConnection() *BackendConnection {
-	if this.lru >= len(this.Backends) - 1 {
+	if this.lru >= len(this.Backends)-1 {
 		this.lru = 0
 		return this.Backends[this.lru]
 	}
@@ -36,7 +36,7 @@ func (this *TargetsSpec) GetNextConnection() *BackendConnection {
 func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var targets *TargetsSpec = this.BackendMap[r.Host]
 	var be, initbe *BackendConnection
-	
+
 	if targets == nil {
 		host, _, err := net.SplitHostPort(r.Host)
 		if err == nil {
@@ -90,7 +90,7 @@ func main() {
 	var wg sync.WaitGroup
 	var data []byte
 	var err error
-	
+
 	flag.Parse()
 
 	if len(*filename) == 0 {
@@ -107,12 +107,12 @@ func main() {
 	if err = proto.UnmarshalText(string(data), config); err != nil {
 		log.Fatal(err)
 	}
-	
-	for _, target := range(config.TargetConfig) {
+
+	for _, target := range config.TargetConfig {
 		var spec *TargetsSpec = new(TargetsSpec)
 		var be_list []*BackendConnection
 
-		for _, backend := range(target.Be) {
+		for _, backend := range target.Be {
 			var dest string = net.JoinHostPort(*backend.Host,
 				fmt.Sprintf("%d", *backend.Port))
 			var conn *BackendConnection = NewBackendConnection(dest)
@@ -127,7 +127,7 @@ func main() {
 			}
 		}
 
-		for _, host := range(target.HttpHost) {
+		for _, host := range target.HttpHost {
 			spec.Backends = be_list
 			backendmap[host] = spec
 		}
@@ -135,7 +135,7 @@ func main() {
 
 	wg.Add(len(config.PortConfig))
 
-	for _, port := range(config.PortConfig) {
+	for _, port := range config.PortConfig {
 		go func(p *PortConfig) {
 			srv := new(http.Server)
 			handler := new(ReqHandler)
