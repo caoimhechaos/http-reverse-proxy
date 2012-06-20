@@ -54,6 +54,9 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// leave it up to our HTTP client.
 	r.Header.Del("Connection")
 
+	// We need to add an XFF header however.
+	r.Header.Add('X-Forwarded-For', r.RemoteAddr)
+
 	initbe = targets.GetNextConnection()
 	be = initbe
 	for {
