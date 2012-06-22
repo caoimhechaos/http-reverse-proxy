@@ -21,4 +21,7 @@ message ReverseProxyConfig {
 	repeated TargetConfig target_config = 2;
 
 	optional Backend forward_all = 3;
+
+	required string access_log_path = 4;
+	optional string info_server = 5;
 }
