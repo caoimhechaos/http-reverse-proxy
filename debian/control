@@ -2,7 +2,7 @@ Source: http-reverse-proxy
 Section: net
 Priority: extra
 Maintainer: Tonnerre Lombard <tonnerre@ancient-solutions.com>
-Build-Depends: debhelper (>= 8.0.0)
+Build-Depends: debhelper (>= 8.0.0), golang-go | gccgo, go-protobuf
 Standards-Version: 3.9.2
 #Homepage: http://g
 Vcs-Git: http://git.ancient-solutions.com/nettools/http-reverse-proxy.git
@@ -10,7 +10,7 @@ Vcs-Browser: http://git.ancient-solutions.com/cgi-bin/gitweb.cgi?p=nettools/http
 
 Package: http-reverse-proxy
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, run-as-daemon (>= 1.0)
 Description: HTTP reverse proxy differenciating by Host: header
  Finds its backends according to Host header from a configuration file,
  and keeps connections to all of them for as long as possible. Reestablishes
