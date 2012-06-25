@@ -1,4 +1,10 @@
-http-reverse-proxy (1.0.1-1) unstable; urgency=low
+http-reverse-proxy (1.0.2-1) unstable; urgency=low
+
+  * Fixed a bug concerning reconnects and short backend lists
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Fri, 22 Jun 2012 02:38:26 +0200
+
+hhttp-reverse-proxy (1.0.1-1) unstable; urgency=low
 
   * Added configurable access log and proper expvars
 
