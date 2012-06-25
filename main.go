@@ -85,6 +85,14 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestsTotal.Add(1)
 	requestsPerHost.Add(host, 1)
 
+	// Determine if we should close the connection.
+	if r.Header.Get("Connection") == "close" ||
+		r.Header.Get("Connection") == "closed" {
+		r.Close = true
+		w.Header().Add("Connection", "close")
+		w.Header().Add("X-Connection", "close")
+	}
+
 	if targets == nil {
 		http.Error(w, "Host not configured",
 			http.StatusServiceUnavailable)
