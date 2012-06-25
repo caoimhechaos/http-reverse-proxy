@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"code.google.com/p/goprotobuf/proto"
 	"expvar"
 	"flag"
@@ -34,6 +35,25 @@ func (this *TargetsSpec) GetNextConnection() *BackendConnection {
 	return this.Backends[this.lru]
 }
 
+// Reader which supports close.
+type byteReadCloser struct {
+	bytes.Reader
+	r *bytes.Reader
+	closed bool
+}
+
+func (b *byteReadCloser) Read(p []byte) (n int, err error) {
+	return b.r.Read(p)
+}
+
+func (b *byteReadCloser) Close() error {
+	if b.closed {
+		return http.ErrBodyReadAfterClose
+	}
+	b.closed = true
+	return nil
+}
+
 var requestsTotal *expvar.Int
 var requestsPerHost *expvar.Map
 var requestsPerBackend *expvar.Map
@@ -46,8 +66,11 @@ var accessLog *log.Logger
 // Default Request Handler
 func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var targets *TargetsSpec = this.BackendMap[r.Host]
+	var body []byte
+	var workr http.Request
 	var host string;
 	var be, initbe *BackendConnection
+	var numAttempts uint32 = 0
 	var err error
 
 	host, _, err = net.SplitHostPort(r.Host)
@@ -79,6 +102,18 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// We need to add an XFF header however.
 	r.Header.Add("X-Forwarded-For", r.RemoteAddr)
 
+	body, err = ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body",
+			http.StatusBadRequest)
+		log.Print("Received unreadable request body for ", r.Host,
+			": ", err.Error())
+		requestErrorsPerError.Add(err.Error(), 1)
+		AccessLogRequest(accessLog, r, http.StatusBadRequest, -1,
+			time.Now())
+		return
+	}
+
 	initbe = targets.GetNextConnection()
 	if initbe == nil {
 		http.Error(w, "Backends not available",
@@ -93,8 +128,12 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	be = initbe
 	for {
+		workr = *r
+		workr.Body = &byteReadCloser{
+			r: bytes.NewReader(body),
+		}
 		requestsPerBackend.Add(be.String(), 1)
-		err = be.Do(r, w)
+		err = be.Do(&workr, w)
 
 		if err == nil {
 			return
@@ -117,7 +156,29 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if be == initbe {
-			break
+			if numAttempts >= 4 {
+				http.Error(w, "Backends not available",
+					http.StatusServiceUnavailable)
+				log.Print("Received request for " + r.Host +
+					" but all backends have errors")
+				requestErrorsPerHost.Add(host, 1)
+				requestErrorsPerError.Add("backend-errors", 1)
+				AccessLogRequest(accessLog, r,
+					http.StatusServiceUnavailable, -1,
+					time.Now())
+				break
+			} else {
+				// We should wait for a bit here because
+				// we may be waiting for some reconnects.
+				// TODO(tonnerre): This could be more
+				// intelligent.
+				log.Print("Attempt ", numAttempts,
+					": Sleeping ",
+					25 * (2 << numAttempts),
+					" ms")
+				time.Sleep(50 * (2 << numAttempts) * time.Millisecond)
+				numAttempts = numAttempts + 1
+			}
 		}
 	}
 }
@@ -158,7 +219,7 @@ func main() {
 			}
 		}(*config.InfoServer)
 	}
-	
+
 	requestsTotal = expvar.NewInt("requests-total")
 	requestsPerHost = expvar.NewMap("requests-per-host")
 	requestsPerBackend = expvar.NewMap("requests-per-backend")

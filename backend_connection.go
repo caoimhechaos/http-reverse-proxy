@@ -52,6 +52,11 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 	var e2 net.Error
 	var ok bool
 
+	if be.tcpConn !=  nil && !be.ready {
+		// Reconnection is already in progress.
+		return
+	}
+
 	e2, ok = e.(net.Error)
 	if ok && e2 != nil && e2.Temporary() {
 		// The error is merely temporary, no need to kill our connection.
