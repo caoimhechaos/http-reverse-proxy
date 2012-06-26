@@ -29,7 +29,7 @@ func AccessLogRequest(accessLog *log.Logger, req *http.Request,
 
 type BackendConnection struct {
 	dest                 string
-	log					 *log.Logger
+	log                  *log.Logger
 	clientConn           *httputil.ClientConn
 	tcpConn              net.Conn
 	weightedResponseTime time.Duration
@@ -41,7 +41,7 @@ func NewBackendConnection(dest string,
 	logDest *log.Logger) *BackendConnection {
 	var be = &BackendConnection{
 		dest: dest,
-		log: logDest,
+		log:  logDest,
 	}
 	go be.CheckAndReconnect(nil)
 	return be
@@ -52,7 +52,7 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 	var e2 net.Error
 	var ok bool
 
-	if be.tcpConn !=  nil && !be.ready {
+	if be.tcpConn != nil && !be.ready {
 		// Reconnection is already in progress.
 		return
 	}
@@ -89,10 +89,12 @@ func (be *BackendConnection) String() string {
 	return be.dest
 }
 
-func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter) error {
+func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
+	closeConnection bool) error {
 	var err error
 	var begin time.Time = time.Now()
 	var passed time.Duration
+
 	res, err := be.clientConn.Do(req)
 	if err != nil {
 		return err
@@ -111,12 +113,16 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter) error 
 		}
 	}
 
-	AccessLogRequest(be.log, req, res.StatusCode, res.ContentLength, begin) 
+	AccessLogRequest(be.log, req, res.StatusCode, res.ContentLength, begin)
 
 	for key, values := range res.Header {
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
+	}
+
+	if closeConnection {
+		w.Header().Set("Connection", "close")
 	}
 
 	w.WriteHeader(res.StatusCode)

@@ -38,7 +38,7 @@ func (this *TargetsSpec) GetNextConnection() *BackendConnection {
 // Reader which supports close.
 type byteReadCloser struct {
 	bytes.Reader
-	r *bytes.Reader
+	r      *bytes.Reader
 	closed bool
 }
 
@@ -68,9 +68,10 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var targets *TargetsSpec = this.BackendMap[r.Host]
 	var body []byte
 	var workr http.Request
-	var host string;
+	var host string
 	var be, initbe *BackendConnection
 	var numAttempts uint32 = 0
+	var closeConnection bool = false
 	var err error
 
 	host, _, err = net.SplitHostPort(r.Host)
@@ -87,19 +88,19 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Determine if we should close the connection.
 	if r.Header.Get("Connection") == "close" ||
-		r.Header.Get("Connection") == "closed" {
-		r.Close = true
+		r.Header.Get("Connection") == "closed" || r.Close {
+		closeConnection = true
+		r.Close = false
 		w.Header().Add("Connection", "close")
-		w.Header().Add("X-Connection", "close")
 	}
 
 	if targets == nil {
 		http.Error(w, "Host not configured",
 			http.StatusServiceUnavailable)
-		log.Print("Received request for unknown host " + r.Host)
+		log.Print("Received request for unknown host ", r.Host)
 		requestErrorsPerError.Add("unknown-host", 1)
-		AccessLogRequest(accessLog, r, http.StatusServiceUnavailable, -1,
-			time.Now())
+		AccessLogRequest(accessLog, r, http.StatusServiceUnavailable,
+			-1, time.Now())
 		return
 	}
 
@@ -140,19 +141,22 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		workr.Body = &byteReadCloser{
 			r: bytes.NewReader(body),
 		}
+
 		requestsPerBackend.Add(be.String(), 1)
-		err = be.Do(&workr, w)
+		err = be.Do(&workr, w, closeConnection)
 
 		if err == nil {
 			return
-		} else {
-			log.Print("Error sending request to backend",
-				be.String(), ": ", err.Error())
-			requestErrorsPerHost.Add(host, 1)
-			requestErrorsPerError.Add(err.Error(), 1)
-			requestErrorsPerBackend.Add(be.String(), 1)
-			go be.CheckAndReconnect(err)
 		}
+
+		// Error sending request to client, we'll have to
+		// log it and try the next backend.
+		log.Print("Error sending request to backend",
+			be.String(), ": ", err.Error())
+		requestErrorsPerHost.Add(host, 1)
+		requestErrorsPerError.Add(err.Error(), 1)
+		requestErrorsPerBackend.Add(be.String(), 1)
+		go be.CheckAndReconnect(err)
 
 		for {
 			be = targets.GetNextConnection()
@@ -180,10 +184,6 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// we may be waiting for some reconnects.
 				// TODO(tonnerre): This could be more
 				// intelligent.
-				log.Print("Attempt ", numAttempts,
-					": Sleeping ",
-					25 * (2 << numAttempts),
-					" ms")
 				time.Sleep(50 * (2 << numAttempts) * time.Millisecond)
 				numAttempts = numAttempts + 1
 			}
@@ -236,7 +236,7 @@ func main() {
 	requestErrorsPerError = expvar.NewMap("request-errors-per-error-type")
 
 	accessLogFile, err = os.OpenFile(*config.AccessLogPath,
-		os.O_WRONLY | os.O_APPEND | os.O_SYNC | os.O_CREATE, 0600)
+		os.O_WRONLY|os.O_APPEND|os.O_SYNC|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatal("Unable to open ", *config.AccessLogPath, " for writing: ",
 			err)
