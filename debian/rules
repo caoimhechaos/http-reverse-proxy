@@ -56,7 +56,7 @@ install: build
 
 	install -o root -g 0 -m 0755 -d $(CURDIR)/debian/http-reverse-proxy/etc/init.d
 	install -o root -g 0 -m 0644 test.conf $(CURDIR)/debian/http-reverse-proxy/etc/http-reverse-proxy.conf
-	install -o root -g 0 -m 0755 $(CURDIR)/debian/initscript $(CURDIR)/debian/http-reverse-proxy/etc/init.d
+	install -o root -g 0 -m 0755 $(CURDIR)/debian/initscript $(CURDIR)/debian/http-reverse-proxy/etc/init.d/http-reverse-proxy
 
 # Build architecture-independent files here.
 binary-indep: install
