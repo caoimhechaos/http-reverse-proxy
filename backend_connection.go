@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"expvar"
 	"io"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -31,6 +33,7 @@ type BackendConnection struct {
 	dest                 string
 	log                  *log.Logger
 	clientConn           *httputil.ClientConn
+	clientConnMtx        *sync.RWMutex
 	tcpConn              net.Conn
 	weightedResponseTime time.Duration
 	connectionAttempt    uint
@@ -42,6 +45,7 @@ func NewBackendConnection(dest string,
 	var be = &BackendConnection{
 		dest: dest,
 		log:  logDest,
+		clientConnMtx: new(sync.RWMutex),
 	}
 	go be.CheckAndReconnect(nil)
 	return be
@@ -62,11 +66,13 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 		// The error is merely temporary, no need to kill our connection.
 		return
 	}
+	be.clientConnMtx.Lock()
 	be.ready = false
 	ReconnectsPerBackend.Add(be.dest, 1)
 	be.tcpConn, err = net.DialTimeout("tcp", be.dest,
 		(2<<be.connectionAttempt)*time.Second)
 	if err != nil {
+		be.clientConnMtx.Unlock()
 		log.Print("Failed to connect to ", be.dest, ": ", err)
 		ReconnectFailuresByReason.Add(err.Error(), 1)
 		be.connectionAttempt = be.connectionAttempt + 1
@@ -77,6 +83,7 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 	be.clientConn = httputil.NewClientConn(be.tcpConn, nil)
 	be.connectionAttempt = 0
 	be.ready = true
+	be.clientConnMtx.Unlock()
 	log.Print("Successfully connected to " + be.dest)
 	return
 }
@@ -92,10 +99,17 @@ func (be *BackendConnection) String() string {
 func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	closeConnection bool) error {
 	var err error
-	var begin time.Time = time.Now()
+	var begin time.Time
 	var passed time.Duration
 
+	be.clientConnMtx.RLock()
+	if be.clientConn == nil {
+		be.clientConnMtx.RUnlock()
+		return errors.New("Transport endpoint not connected")
+	}
+	begin = time.Now()
 	res, err := be.clientConn.Do(req)
+	be.clientConnMtx.RUnlock()
 	if err != nil {
 		return err
 	}
