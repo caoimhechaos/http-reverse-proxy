@@ -66,13 +66,11 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 		// The error is merely temporary, no need to kill our connection.
 		return
 	}
-	be.clientConnMtx.Lock()
 	be.ready = false
 	ReconnectsPerBackend.Add(be.dest, 1)
 	be.tcpConn, err = net.DialTimeout("tcp", be.dest,
 		(2<<be.connectionAttempt)*time.Second)
 	if err != nil {
-		be.clientConnMtx.Unlock()
 		log.Print("Failed to connect to ", be.dest, ": ", err)
 		ReconnectFailuresByReason.Add(err.Error(), 1)
 		be.connectionAttempt = be.connectionAttempt + 1
@@ -80,10 +78,11 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 		go be.CheckAndReconnect(nil)
 		return
 	}
+	be.clientConnMtx.Lock()
 	be.clientConn = httputil.NewClientConn(be.tcpConn, nil)
+	be.clientConnMtx.Unlock()
 	be.connectionAttempt = 0
 	be.ready = true
-	be.clientConnMtx.Unlock()
 	log.Print("Successfully connected to " + be.dest)
 	return
 }
