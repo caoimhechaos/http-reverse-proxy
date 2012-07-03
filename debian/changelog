@@ -1,3 +1,9 @@
+http-reverse-proxy (1.0.5-1) unstable; urgency=low
+
+  * Fix behavior before the first connections were established
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Tue, 03 Jul 2012 09:40:26 +0200
+
 http-reverse-proxy (1.0.4-3) unstable; urgency=low
 
   * Fix the name of the init script.
