@@ -1,3 +1,9 @@
+http-reverse-proxy (1.0.6-1) unstable; urgency=low
+
+  * Fix a connection leak in the backend manager
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Fri, 27 Jul 2012 22:36:15 +0200
+
 http-reverse-proxy (1.0.5-2) unstable; urgency=low
 
   * Use the proper place for the init script instead of doing it all manually
