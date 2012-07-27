@@ -67,6 +67,10 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 		return
 	}
 	be.ready = false
+	if be.tcpConn != nil {
+		be.tcpConn.Close()
+		be.tcpConn = nil
+	}
 	ReconnectsPerBackend.Add(be.dest, 1)
 	be.tcpConn, err = net.DialTimeout("tcp", be.dest,
 		(2<<be.connectionAttempt)*time.Second)
