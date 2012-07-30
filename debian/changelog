@@ -1,3 +1,10 @@
+http-reverse-proxy (1.0.6-2) unstable; urgency=low
+
+  * Rebuild with a more recent Go version which comes with a
+    fix for connection leaks in the HTTP server.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Tue, 31 Jul 2012 00:43:16 +0200
+
 http-reverse-proxy (1.0.6-1) unstable; urgency=low
 
   * Fix a connection leak in the backend manager
