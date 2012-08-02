@@ -282,6 +282,11 @@ func main() {
 			srv.Addr = ":" + fmt.Sprint(*p.Port)
 			srv.Handler = handler
 
+			// Set some sensible timeouts so we don't run out
+			// of connections.
+			srv.ReadTimeout = time.Minute
+			srv.WriteTimeout = 5 * time.Second
+
 			if p.SslCertPath != nil && p.SslKeyPath != nil {
 				err = srv.ListenAndServeTLS(*p.SslCertPath,
 					*p.SslKeyPath)
