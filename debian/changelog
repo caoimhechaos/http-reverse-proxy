@@ -1,3 +1,10 @@
+http-reverse-proxy (1.0.7-1) unstable; urgency=low
+
+  * Added timeouts for the HTTP server, hoping to avoid
+    connection leaks.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Thu, 02 Aug 2012 23:18:34 +0200
+
 http-reverse-proxy (1.0.6-2) unstable; urgency=low
 
   * Rebuild with a more recent Go version which comes with a
