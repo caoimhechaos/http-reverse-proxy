@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ancientsolutions.com/urlconnection"
 	"errors"
 	"expvar"
 	"io"
@@ -42,9 +43,14 @@ type BackendConnection struct {
 
 func NewBackendConnection(dest string,
 	logDest *log.Logger) *BackendConnection {
+	return NewBackendFromURL("tcp://" + dest, logDest)
+}
+
+func NewBackendFromURL(url string,
+	logDest *log.Logger) *BackendConnection {
 	var be = &BackendConnection{
-		dest: dest,
-		log:  logDest,
+		dest: url,
+		log: logDest,
 		clientConnMtx: new(sync.RWMutex),
 	}
 	go be.CheckAndReconnect(nil)
@@ -72,7 +78,7 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 		be.tcpConn = nil
 	}
 	ReconnectsPerBackend.Add(be.dest, 1)
-	be.tcpConn, err = net.DialTimeout("tcp", be.dest,
+	be.tcpConn, err = urlconnection.ConnectTimeout(be.dest,
 		(2<<be.connectionAttempt)*time.Second)
 	if err != nil {
 		log.Print("Failed to connect to ", be.dest, ": ", err)

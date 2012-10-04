@@ -14,6 +14,7 @@ message Backend {
 message TargetConfig {
 	repeated string http_host = 1;
 	repeated Backend be = 2;
+	repeated string backend_uri = 3;
 }
 
 message ReverseProxyConfig {
@@ -24,4 +25,7 @@ message ReverseProxyConfig {
 
 	required string access_log_path = 4;
 	optional string info_server = 5;
+
+	optional string doozer_uri = 6;
+	optional string doozer_boot_uri = 7;
 }

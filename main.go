@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ancientsolutions.com/urlconnection"
 	"bytes"
 	"code.google.com/p/goprotobuf/proto"
 	"expvar"
@@ -112,6 +113,7 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Header.Add("X-Forwarded-For", r.RemoteAddr)
 
 	body, err = ioutil.ReadAll(r.Body)
+	r.Body.Close()
 	if err != nil {
 		http.Error(w, "Error reading request body",
 			http.StatusBadRequest)
@@ -228,6 +230,20 @@ func main() {
 		}(*config.InfoServer)
 	}
 
+	if config.DoozerUri != nil {
+		var buri string
+
+		if config.DoozerBootUri != nil {
+			buri = *config.DoozerBootUri
+		}
+
+		err = urlconnection.SetupDoozer(buri, *config.DoozerUri)
+		if err != nil {
+			log.Fatal("Unable to setup Doozer connection ",
+			*config.DoozerUri, ": ", err)
+		}
+	}
+
 	requestsTotal = expvar.NewInt("requests-total")
 	requestsPerHost = expvar.NewMap("requests-per-host")
 	requestsPerBackend = expvar.NewMap("requests-per-backend")
@@ -262,6 +278,13 @@ func main() {
 					dest)
 				be_list = append(be_list, conn)
 			}
+		}
+
+		for _, backend := range target.BackendUri {
+			var conn *BackendConnection
+
+			conn = NewBackendFromURL(backend, accessLog)
+			be_list = append(be_list, conn)
 		}
 
 		for _, host := range target.HttpHost {
