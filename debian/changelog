@@ -1,3 +1,10 @@
+http-reverse-proxy (1.0.8-1) unstable; urgency=low
+
+  * Implemented a way to specify backends as connection URLs rather than
+    host:port pairs.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Fri, 05 Oct 2012 00:39:46 +0200
+
 http-reverse-proxy (1.0.7-1) unstable; urgency=low
 
   * Added timeouts for the HTTP server, hoping to avoid
