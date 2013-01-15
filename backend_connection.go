@@ -149,9 +149,25 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	}
 
 	w.WriteHeader(res.StatusCode)
-	_, err = io.Copy(w, res.Body)
-	if err != nil {
-		return err
+	for {
+		var data []byte = make([]byte, 65536)
+		var length int
+		var errb error
+
+		length, err = res.Body.Read(data)
+		if length > 0 {
+			length, errb = w.Write(data[:length])
+			if errb != nil {
+				return err
+			}
+		}
+		if err == io.EOF {
+			// Reached end of input.
+			break
+		}
+		if err != nil {
+			return err
+		}
 	}
 	RequestTimeSumPerBackend.AddFloat(be.dest, passed.Seconds())
 
