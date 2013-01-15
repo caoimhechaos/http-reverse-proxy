@@ -1,3 +1,9 @@
+http-reverse-proxy (1.0.10-1) unstable; urgency=low
+
+  * Bugfix for 1.0.9: close the client connection in case of an error.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Tue, 15 Jan 2013 21:57:10 +0100
+
 http-reverse-proxy (1.0.9-1) unstable; urgency=low
 
   * Ensure we don't overshoot with the content-length.
