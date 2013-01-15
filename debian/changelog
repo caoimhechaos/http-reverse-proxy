@@ -1,3 +1,9 @@
+http-reverse-proxy (1.0.9-1) unstable; urgency=low
+
+  * Ensure we don't overshoot with the content-length.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Tue, 15 Jan 2013 21:42:08 +0100
+
 http-reverse-proxy (1.0.8-1) unstable; urgency=low
 
   * Implemented a way to specify backends as connection URLs rather than
