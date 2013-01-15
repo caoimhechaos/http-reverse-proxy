@@ -158,6 +158,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 		if length > 0 {
 			length, errb = w.Write(data[:length])
 			if errb != nil {
+				res.Body.Close()
 				return err
 			}
 		}
@@ -166,6 +167,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 			break
 		}
 		if err != nil {
+			res.Body.Close()
 			return err
 		}
 	}
