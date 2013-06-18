@@ -195,6 +195,8 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var filename = flag.String("config", "", "Path to configuration file")
+	var timeout = flag.Int64("timeout", 120,
+		"Client connection timeout in seconds")
 	var config = new(ReverseProxyConfig)
 	var backendmap = make(map[string]*TargetsSpec)
 	var accessLogFile *os.File
@@ -308,7 +310,7 @@ func main() {
 			// Set some sensible timeouts so we don't run out
 			// of connections.
 			srv.ReadTimeout = time.Minute
-			srv.WriteTimeout = 5 * time.Second
+			srv.WriteTimeout = time.Duration(*timeout) * time.Second
 
 			if p.SslCertPath != nil && p.SslKeyPath != nil {
 				err = srv.ListenAndServeTLS(*p.SslCertPath,
