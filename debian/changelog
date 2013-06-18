@@ -1,3 +1,10 @@
+http-reverse-proxy (1.0.11-1) unstable; urgency=low
+
+  * Make the client timeout a flag so it's easier to adapt. It's still far from
+    what we want, but it should improve things slightly.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Tue, 18 Jun 2013 07:43:35 +0200
+
 http-reverse-proxy (1.0.10-1) unstable; urgency=low
 
   * Bugfix for 1.0.9: close the client connection in case of an error.
