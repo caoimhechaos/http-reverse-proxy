@@ -1,3 +1,9 @@
+http-reverse-proxy (1.0.11-2) unstable; urgency=low
+
+  * Rebuild to catch the go-urlconnection fix.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Fri, 05 Jul 2013 22:39:03 +0200
+
 http-reverse-proxy (1.0.11-1) unstable; urgency=low
 
   * Make the client timeout a flag so it's easier to adapt. It's still far from
