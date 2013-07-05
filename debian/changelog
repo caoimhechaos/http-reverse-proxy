@@ -1,4 +1,4 @@
-http-reverse-proxy (1.0.11-2) unstable; urgency=low
+http-reverse-proxy (1.0.11-3) unstable; urgency=low
 
   * Rebuild to catch the go-urlconnection fix.
 
