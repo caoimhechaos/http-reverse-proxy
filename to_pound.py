@@ -93,4 +93,9 @@ for t in conf.target_config:
 					"\t\tPort\t%(port)d\n\tEnd" %
 					{'address': be.host, 'port': be.port})
 
+		if len(t.be) == 0 and len(t.backend_uri) > 0:
+			print("\tBackEnd\n\t\tAddress\t%(address)s\n"
+					"\t\tPort\t%(port)d\n\tEnd" %
+					{'address': '::1', 'port': 8080})
+
 		print("End\n")
