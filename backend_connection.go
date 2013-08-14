@@ -112,13 +112,12 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	var passed time.Duration
 
 	be.clientConnMtx.RLock()
+	defer be.clientConnMtx.RUnlock()
 	if be.clientConn == nil {
-		be.clientConnMtx.RUnlock()
 		return errors.New("Transport endpoint not connected")
 	}
 	begin = time.Now()
 	res, err := be.clientConn.Do(req)
-	be.clientConnMtx.RUnlock()
 	if err != nil {
 		return err
 	}
