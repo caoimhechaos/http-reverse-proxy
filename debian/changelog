@@ -1,3 +1,10 @@
+http-reverse-proxy (1.0.12-1) unstable; urgency=low
+
+  * Keep the backend connection locked until we're absolutely done with the
+    request.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Wed, 14 Aug 2013 23:30:20 +0200
+
 http-reverse-proxy (1.0.11-3) unstable; urgency=low
 
   * Rebuild to catch the go-urlconnection fix.
