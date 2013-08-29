@@ -17,6 +17,27 @@ message TargetConfig {
 	repeated string backend_uri = 3;
 }
 
+message CountryBlacklistConfig {
+	// Countries the blacklist should apply to.
+	repeated string country = 1;
+
+	// Error message which should be returned to the user.
+	optional string error_html = 2;
+
+	// Redirect URL which the user should be sent to. If error_html is
+	// also set, it will display the message to the user and redirect
+	// after timeout seconds.
+	optional string redirect_url = 3;
+
+	// Timeout after which a redirect to the redirect_url should be made
+	// in case an error_html message is specified simultaneously.
+	required int32 timeout = 4 [default = 120];
+
+	// List of HTTP hosts which should be whitelisted, i.e. which will be
+	// displayed even if we blacklisted the corresponding country.
+	repeated string host_whitelist = 5;
+}
+
 message ReverseProxyConfig {
 	repeated PortConfig port_config = 1;
 	repeated TargetConfig target_config = 2;
@@ -28,4 +49,6 @@ message ReverseProxyConfig {
 
 	optional string doozer_uri = 6;
 	optional string doozer_boot_uri = 7;
+
+	repeated CountryBlacklistConfig blacklist = 8;
 }
