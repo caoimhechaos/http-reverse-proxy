@@ -7,6 +7,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"github.com/nranchev/libgeo"
 	"io"
 	"io/ioutil"
 	"log"
@@ -63,6 +64,8 @@ var requestErrorsPerBackend *expvar.Map
 var requestErrorsPerError *expvar.Map
 
 var accessLog *log.Logger
+
+var geoip *libgeo.GeoIP
 
 // Default Request Handler
 func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
@@ -246,6 +249,15 @@ func main() {
 			log.Fatal("Unable to setup Doozer connection ",
 			*config.DoozerUri, ": ", err)
 		}
+	}
+
+	if config.GeoipPath != nil {
+		geoip, err = libgeo.Load(*config.GeoipPath)
+		if err != nil {
+			return nil, err
+		}
+	} else if len(config.Blacklist) > 0 {
+		log.Fatal("Blacklist given without geoip path")
 	}
 
 	requestsTotal = expvar.NewInt("requests-total")
