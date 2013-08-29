@@ -50,5 +50,8 @@ message ReverseProxyConfig {
 	optional string doozer_uri = 6;
 	optional string doozer_boot_uri = 7;
 
+	// Country based blacklisting. If you want to use it, you will need to
+	// specify geoip_path.
 	repeated CountryBlacklistConfig blacklist = 8;
+	optional string geoip_path = 9;
 }
