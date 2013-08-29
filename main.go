@@ -254,7 +254,8 @@ func main() {
 	if config.GeoipPath != nil {
 		geoip, err = libgeo.Load(*config.GeoipPath)
 		if err != nil {
-			return nil, err
+			log.Fatal("Unable to open geoip database: ",
+				err)
 		}
 	} else if len(config.Blacklist) > 0 {
 		log.Fatal("Blacklist given without geoip path")
