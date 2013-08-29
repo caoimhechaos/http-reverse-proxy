@@ -65,7 +65,8 @@ var requestErrorsPerError *expvar.Map
 var accessLog *log.Logger
 
 // Default Request Handler
-func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
+	r *http.Request) {
 	var targets *TargetsSpec = this.BackendMap[r.Host]
 	var body []byte
 	var workr http.Request
@@ -133,8 +134,8 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			" but all backends are down")
 		requestErrorsPerHost.Add(host, 1)
 		requestErrorsPerError.Add("no-backends", 1)
-		AccessLogRequest(accessLog, r, http.StatusServiceUnavailable, -1,
-			time.Now())
+		AccessLogRequest(accessLog, r,
+			http.StatusServiceUnavailable, -1, time.Now())
 		return
 	}
 	be = initbe
@@ -186,7 +187,8 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// we may be waiting for some reconnects.
 				// TODO(tonnerre): This could be more
 				// intelligent.
-				time.Sleep(50 * (2 << numAttempts) * time.Millisecond)
+				time.Sleep(50 * (2 << numAttempts) *
+					time.Millisecond)
 				numAttempts = numAttempts + 1
 			}
 		}
@@ -226,8 +228,8 @@ func main() {
 		go func(addr string) {
 			err = http.ListenAndServe(addr, nil)
 			if err != nil {
-				log.Fatal("Unable to start info server on ", addr,
-					": ", err)
+				log.Fatal("Unable to start info server on ",
+					addr, ": ", err)
 			}
 		}(*config.InfoServer)
 	}
@@ -256,8 +258,8 @@ func main() {
 	accessLogFile, err = os.OpenFile(*config.AccessLogPath,
 		os.O_WRONLY|os.O_APPEND|os.O_SYNC|os.O_CREATE, 0600)
 	if err != nil {
-		log.Fatal("Unable to open ", *config.AccessLogPath, " for writing: ",
-			err)
+		log.Fatal("Unable to open ", *config.AccessLogPath,
+			" for writing: ", err)
 	}
 
 	accessLog = log.New(accessLogFile, "", 0)
@@ -310,7 +312,8 @@ func main() {
 			// Set some sensible timeouts so we don't run out
 			// of connections.
 			srv.ReadTimeout = time.Minute
-			srv.WriteTimeout = time.Duration(*timeout) * time.Second
+			srv.WriteTimeout = time.Duration(*timeout) *
+				time.Second
 
 			if p.SslCertPath != nil && p.SslKeyPath != nil {
 				err = srv.ListenAndServeTLS(*p.SslCertPath,
