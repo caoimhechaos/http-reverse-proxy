@@ -21,6 +21,9 @@ import (
 type ReqHandler struct {
 	PortConfig *PortConfig
 	BackendMap map[string]*TargetsSpec
+
+	// A map from source countries to their blacklist record.
+	Blacklist  map[string]*CountryBlacklistConfig
 }
 
 type TargetsSpec struct {
@@ -62,10 +65,13 @@ var requestsPerBackend *expvar.Map
 var requestErrorsPerHost *expvar.Map
 var requestErrorsPerBackend *expvar.Map
 var requestErrorsPerError *expvar.Map
+var geoipLookupErrors *expvar.Int
+var geoipRejectedRequests *expvar.Int
+var geoipRejectedRequestsByCC *expvar.Map
 
 var accessLog *log.Logger
 
-var geoip *libgeo.GeoIP
+var geoip *libgeo.GeoIP = nil
 
 // Default Request Handler
 func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
@@ -115,6 +121,52 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
 
 	// We need to add an XFF header however.
 	r.Header.Add("X-Forwarded-For", r.RemoteAddr)
+
+	// Determine if there's a geoip block for the requestor.
+	if geoip != nil {
+		var loc = geoip.GetLocationByIP(r.RemoteAddr)
+		var rec *CountryBlacklistConfig
+		var ok bool
+
+		if loc == nil {
+			geoipLookupErrors.Add(1)
+		} else if rec, ok = this.Blacklist[loc.CountryCode]; ok {
+			var whitelisted bool = false
+
+			for _, srvname := range rec.HostWhitelist {
+				if srvname == host {
+					whitelisted = true
+				}
+			}
+
+			if !whitelisted {
+				r.Body.Close()
+
+				if rec.ErrorHtml != nil &&
+					rec.RedirectUrl != nil {
+					w.Header().Add("Refresh",
+						fmt.Sprintf("%d; %s",
+							*rec.Timeout,
+							*rec.RedirectUrl))
+				} else if rec.ErrorHtml == nil &&
+					rec.RedirectUrl != nil {
+					http.Redirect(w, r,
+						*rec.RedirectUrl,
+						http.StatusFound)
+				}
+
+				if rec.ErrorHtml != nil {
+					w.Write([]byte(*rec.ErrorHtml))
+				}
+
+				geoipRejectedRequests.Add(1)
+				geoipRejectedRequestsByCC.Add(
+					loc.CountryCode, 1)
+
+				return
+			}
+		}
+	}
 
 	body, err = ioutil.ReadAll(r.Body)
 	r.Body.Close()
@@ -267,6 +319,10 @@ func main() {
 	requestErrorsPerHost = expvar.NewMap("request-errors-per-host")
 	requestErrorsPerBackend = expvar.NewMap("request-errors-per-backend")
 	requestErrorsPerError = expvar.NewMap("request-errors-per-error-type")
+	geoipLookupErrors = expvar.NewInt("geoip-lookup-errors")
+	geoipRejectedRequests = expvar.NewInt("geoip-rejected-requests")
+	geoipRejectedRequestsByCC = expvar.NewMap(
+		"geoip-rejected-requests-by-cc")
 
 	accessLogFile, err = os.OpenFile(*config.AccessLogPath,
 		os.O_WRONLY|os.O_APPEND|os.O_SYNC|os.O_CREATE, 0600)
@@ -318,6 +374,15 @@ func main() {
 			handler := new(ReqHandler)
 			handler.PortConfig = p
 			handler.BackendMap = backendmap
+			handler.Blacklist =
+				make(map[string]*CountryBlacklistConfig)
+
+			for _, rec := range config.Blacklist {
+				for _, name := range rec.Country {
+					handler.Blacklist[name] =
+						rec
+				}
+			}
 
 			srv.Addr = ":" + fmt.Sprint(*p.Port)
 			srv.Handler = handler
