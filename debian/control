@@ -3,7 +3,7 @@ Section: net
 Priority: extra
 Maintainer: Tonnerre Lombard <tonnerre@ancient-solutions.com>
 Build-Depends: debhelper (>= 8.0.0), golang-go | gccgo, go-protobuf
-Standards-Version: 3.9.2
+Standards-Version: 3.9.4
 #Homepage: http://g
 Vcs-Git: http://git.ancient-solutions.com/nettools/http-reverse-proxy.git
 Vcs-Browser: http://git.ancient-solutions.com/cgi-bin/gitweb.cgi?p=nettools/http-reverse-proxy.git;a=summary
