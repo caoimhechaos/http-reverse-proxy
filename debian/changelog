@@ -1,3 +1,9 @@
+http-reverse-proxy (1.1-1) unstable; urgency=low
+
+  * Added support for blacklisting source countries.
+
+ -- Tonnerre Lombard <tonnerre@ancient-solutions.com>  Sat, 31 Aug 2013 02:37:39 +0200
+
 http-reverse-proxy (1.0.12-1) unstable; urgency=low
 
   * Keep the backend connection locked until we're absolutely done with the
