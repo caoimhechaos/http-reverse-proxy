@@ -350,6 +350,17 @@ func main() {
 		var spec *TargetsSpec = new(TargetsSpec)
 		var be_list []*BackendConnection
 
+		if config.MinSubsetSize != nil {
+			var orig_count int = len(target.Be)
+			var i int = orig_count
+
+			for int32(len(target.Be)) < *config.MinSubsetSize {
+				target.Be = append(target.Be,
+					target.Be[i % orig_count])
+				i = i + 1
+			}
+		}
+
 		for _, backend := range target.Be {
 			var dest string = net.JoinHostPort(*backend.Host,
 				fmt.Sprintf("%d", *backend.Port))

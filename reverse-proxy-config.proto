@@ -54,4 +54,8 @@ message ReverseProxyConfig {
 	// specify geoip_path.
 	repeated CountryBlacklistConfig blacklist = 8;
 	optional string geoip_path = 9;
+
+	// Use at least this many backend connections. This will connect to
+	// multiple backends as required.
+	optional int32 min_subset_size = 10;
 }
