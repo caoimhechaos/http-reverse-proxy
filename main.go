@@ -125,23 +125,28 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
 	// Determine if there's a geoip block for the requestor.
 	if geoip != nil {
 		// First we need to extract the host part from the remote addr.
-		var host string
+		var rhost string
 		var rec *CountryBlacklistConfig
 		var ok bool
 
-		host, _, err = net.SplitHostPort(r.RemoteAddr)
+		rhost, _, err = net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			host = r.RemoteAddr
+			rhost = r.RemoteAddr
 		}
 
-		var loc = geoip.GetLocationByIP(host)
+		var loc = geoip.GetLocationByIP(rhost)
 		if loc == nil {
 			geoipLookupErrors.Add(1)
 		} else if rec, ok = this.Blacklist[loc.CountryCode]; ok {
 			var whitelisted bool = false
 
 			for _, srvname := range rec.HostWhitelist {
-				if srvname == host {
+				rhost, _, err =
+					net.SplitHostPort(srvname)
+				if err != nil {
+					rhost = srvname
+				}
+				if rhost == host {
 					whitelisted = true
 				}
 			}
