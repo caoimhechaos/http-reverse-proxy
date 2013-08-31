@@ -216,13 +216,23 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
 	}
 	be = initbe
 	for {
+		var busy bool = true
 		workr = *r
 		workr.Body = &byteReadCloser{
 			r: bytes.NewReader(body),
 		}
 
-		requestsPerBackend.Add(be.String(), 1)
-		err = be.Do(&workr, w, closeConnection)
+		for busy || !be.Ready() {
+			requestsPerBackend.Add(be.String(), 1)
+			busy, err = be.Do(&workr, w, closeConnection)
+			if busy {
+				if be == initbe {
+					time.Sleep(5 * (2 << numAttempts) *
+						time.Millisecond)
+				}
+				be = targets.GetNextConnection()
+			}
+		}
 
 		if err == nil {
 			return

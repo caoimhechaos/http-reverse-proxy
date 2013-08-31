@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -34,7 +33,7 @@ type BackendConnection struct {
 	dest                 string
 	log                  *log.Logger
 	clientConn           *httputil.ClientConn
-	clientConnMtx        *sync.RWMutex
+	clientConnMtx        *Mutex
 	tcpConn              net.Conn
 	weightedResponseTime time.Duration
 	connectionAttempt    uint
@@ -51,7 +50,7 @@ func NewBackendFromURL(url string,
 	var be = &BackendConnection{
 		dest: url,
 		log: logDest,
-		clientConnMtx: new(sync.RWMutex),
+		clientConnMtx: NewMutex(),
 	}
 	go be.CheckAndReconnect(nil)
 	return be
@@ -106,20 +105,23 @@ func (be *BackendConnection) String() string {
 }
 
 func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
-	closeConnection bool) error {
+	closeConnection bool) (bool, error) {
 	var err error
 	var begin time.Time
 	var passed time.Duration
 
-	be.clientConnMtx.RLock()
-	defer be.clientConnMtx.RUnlock()
+	// Check if the connection is busy.
+	if !be.clientConnMtx.TryLock() {
+		return true, nil
+	}
+	defer be.clientConnMtx.Unlock()
 	if be.clientConn == nil {
-		return errors.New("Transport endpoint not connected")
+		return false, errors.New("Transport endpoint not connected")
 	}
 	begin = time.Now()
 	res, err := be.clientConn.Do(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 	passed = time.Since(begin)
 
@@ -158,7 +160,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 			length, errb = w.Write(data[:length])
 			if errb != nil {
 				res.Body.Close()
-				return err
+				return false, err
 			}
 		}
 		if err == io.EOF {
@@ -167,11 +169,11 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 		}
 		if err != nil {
 			res.Body.Close()
-			return err
+			return false, err
 		}
 	}
 	RequestTimeSumPerBackend.AddFloat(be.dest, passed.Seconds())
 
 	res.Body.Close()
-	return nil
+	return false, nil
 }

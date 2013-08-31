@@ -7,7 +7,8 @@ proto_files = env.Protoc([],
 	)
 
 proxy = env.Go('proxy', ['main.go', 'backend_connection.go',
-			 'reverse-proxy-config.pb.go'], proto_files)
+			 'mutex.go', 'reverse-proxy-config.pb.go'],
+			 proto_files)
 prog = env.GoProgram('http-reverse-proxy', proxy)
 env.Install("/usr/local/bin", prog)
 env.Alias('install', ['/usr/local/bin'])
