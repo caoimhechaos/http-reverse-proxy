@@ -165,11 +165,19 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
 					http.Redirect(w, r,
 						*rec.RedirectUrl,
 						http.StatusFound)
+					AccessLogRequest(accessLog, r,
+						http.StatusFound,
+						int64(len(*rec.RedirectUrl)),
+						time.Now())
 				}
 
 				if rec.ErrorHtml != nil {
 					w.WriteHeader(http.StatusForbidden)
 					w.Write([]byte(*rec.ErrorHtml))
+					AccessLogRequest(accessLog, r,
+						http.StatusForbidden,
+						int64(len(*rec.ErrorHtml)),
+						time.Now())
 				}
 
 				geoipRejectedRequests.Add(1)
