@@ -358,7 +358,7 @@ func main() {
 		var spec *TargetsSpec = new(TargetsSpec)
 		var be_list []*BackendConnection
 
-		if config.MinSubsetSize != nil {
+		if config.MinSubsetSize != nil && len(target.Be) > 0 {
 			var orig_count int = len(target.Be)
 			var i int = orig_count
 
