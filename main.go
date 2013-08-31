@@ -168,6 +168,7 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
 				}
 
 				if rec.ErrorHtml != nil {
+					w.WriteHeader(http.StatusForbidden)
 					w.Write([]byte(*rec.ErrorHtml))
 				}
 
