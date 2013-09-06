@@ -240,7 +240,7 @@ func (this *ReqHandler) ServeHTTP(w http.ResponseWriter,
 
 		// Error sending request to client, we'll have to
 		// log it and try the next backend.
-		log.Print("Error sending request to backend",
+		log.Print("Error sending request to backend ",
 			be.String(), ": ", err.Error())
 		requestErrorsPerHost.Add(host, 1)
 		requestErrorsPerError.Add(err.Error(), 1)
