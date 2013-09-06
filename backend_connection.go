@@ -92,7 +92,6 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 	be.clientConnMtx.Unlock()
 	be.connectionAttempt = 0
 	be.ready = true
-	log.Print("Successfully connected to " + be.dest)
 	return
 }
 
