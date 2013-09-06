@@ -123,6 +123,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 		return false, err
 	}
 	passed = time.Since(begin)
+	defer res.Body.Close()
 
 	// Backfill URL field
 	if len(req.URL.Host) == 0 {
@@ -158,8 +159,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 		if length > 0 {
 			length, errb = w.Write(data[:length])
 			if errb != nil {
-				res.Body.Close()
-				return false, err
+				return false, errb
 			}
 		}
 		if err == io.EOF {
@@ -167,12 +167,10 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 			break
 		}
 		if err != nil {
-			res.Body.Close()
 			return false, err
 		}
 	}
 	RequestTimeSumPerBackend.AddFloat(be.dest, passed.Seconds())
 
-	res.Body.Close()
 	return false, nil
 }
