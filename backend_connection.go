@@ -155,28 +155,21 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 
 	if closeConnection {
 		w.Header().Set("Connection", "close")
+	} else {
+		w.Header().Del("Connection")
 	}
 
 	w.WriteHeader(res.StatusCode)
-	for {
-		var data []byte = make([]byte, 65536)
-		var length int
-		var errb error
+	_, err := io.Copy(w, res.Body)
+	if err != nil && err != io.EOF {
+		log.Print("Error copying bytes: ", err.Error(),
+			" at ", req.URL.String())
 
-		length, err = res.Body.Read(data)
-		if length > 0 {
-			length, errb = w.Write(data[:length])
-			if errb != nil {
-				return false, errb
-			}
-		}
-		if err == io.EOF {
-			// Reached end of input.
-			break
-		}
-		if err != nil {
-			return false, err
-		}
+		// It is too late to return an error now (we already
+		// started sending the response), so we don't return
+		// an error here (it would cause another attempt to
+		// fetch the data).
+		return false, err
 	}
 	RequestTimeSumPerBackend.AddFloat(be.dest, passed.Seconds())
 
