@@ -159,6 +159,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	}
 
 	w.WriteHeader(res.StatusCode)
+<<<<<<< HEAD
 	_, err := io.Copy(w, res.Body)
 	if err != nil && err != io.EOF {
 		log.Print("Error copying bytes: ", err.Error(),
@@ -169,6 +170,29 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 		// an error here (it would cause another attempt to
 		// fetch the data).
 		return false, err
+=======
+	for {
+		var data []byte = make([]byte, 65536)
+		var length int
+		var errb error
+
+		length, err = res.Body.Read(data)
+		if length > 0 {
+			length, errb = w.Write(data[:length])
+			if errb != nil {
+				res.Body.Close()
+				return errb
+			}
+		}
+		if err == io.EOF {
+			// Reached end of input.
+			break
+		}
+		if err != nil {
+			res.Body.Close()
+			return err
+		}
+>>>>>>> Ignore ErrPersistEOF which just means we need to reneg the connection
 	}
 	RequestTimeSumPerBackend.AddFloat(be.dest, passed.Seconds())
 
