@@ -119,7 +119,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	}
 	begin = time.Now()
 	res, err := be.clientConn.Do(req)
-	if err != nil {
+	if err != nil && err != httputil.ErrPersistEOF {
 		return false, err
 	}
 	passed = time.Since(begin)
