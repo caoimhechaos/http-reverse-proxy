@@ -72,6 +72,9 @@ func (be *BackendConnection) CheckAndReconnect(e error) {
 		return
 	}
 	be.ready = false
+	if be.clientConn != nil {
+		be.clientConn.Close()
+	}
 	if be.tcpConn != nil {
 		be.tcpConn.Close()
 		be.tcpConn = nil
@@ -119,8 +122,13 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	}
 	begin = time.Now()
 	res, err := be.clientConn.Do(req)
-	if err != nil && err != httputil.ErrPersistEOF {
+	if err == httputil.ErrPersistEOF {
+		defer be.CheckAndReconnect(nil)
+		err = nil
+	}
+	if err != nil {
 		return false, err
+		return err
 	}
 	passed = time.Since(begin)
 	defer res.Body.Close()
