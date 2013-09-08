@@ -2,7 +2,7 @@ Source: http-reverse-proxy
 Section: net
 Priority: extra
 Maintainer: Tonnerre Lombard <tonnerre@ancient-solutions.com>
-Build-Depends: debhelper (>= 8.0.0), golang-go | gccgo, go-protobuf
+Build-Depends: debhelper (>= 8.0.0), golang-go | gccgo, golang-goprotobuf-dev
 Standards-Version: 3.9.4
 Homepage: http://www.ancient-solutions.com/
 Vcs-Git: http://git.ancient-solutions.com/nettools/http-reverse-proxy.git
