@@ -128,7 +128,6 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	}
 	if err != nil {
 		return false, err
-		return err
 	}
 	passed = time.Since(begin)
 	defer res.Body.Close()
