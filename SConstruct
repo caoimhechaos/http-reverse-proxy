@@ -2,7 +2,7 @@ env = Environment(ENV = {'GOROOT': '/usr/lib/go'}, TOOLS=['default', 'go', 'prot
 
 proto_files = env.Protoc([],
 	"reverse-proxy-config.proto",
-	PROTOCFLAGS='--plugin=protoc-gen-go=/usr/lib/go/bin/protoc-gen-go --go_out=.',
+	PROTOCFLAGS='--plugin=protoc-gen-go=/usr/bin/protoc-gen-go --go_out=.',
 	PROTOCPYTHONOUTDIR='',
 	)
 
