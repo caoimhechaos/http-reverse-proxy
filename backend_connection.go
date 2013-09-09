@@ -159,7 +159,7 @@ func (be *BackendConnection) Do(req *http.Request, w http.ResponseWriter,
 	}
 
 	w.WriteHeader(res.StatusCode)
-	_, err := io.Copy(w, res.Body)
+	_, err = io.Copy(w, res.Body)
 	if err != nil && err != io.EOF {
 		log.Print("Error copying bytes: ", err.Error(),
 			" at ", req.URL.String())
