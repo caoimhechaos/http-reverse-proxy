@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ancientsolutions.com/urlconnection"
+	"ancient-solutions.com/net/urlconnection"
 	"errors"
 	"expvar"
 	"io"
