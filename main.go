@@ -1,13 +1,13 @@
 package main
 
 import (
-	"ancientsolutions.com/urlconnection"
+	"ancient-solutions.com/net/urlconnection"
 	"bytes"
 	"code.google.com/p/goprotobuf/proto"
 	"expvar"
 	"flag"
 	"fmt"
-	"github.com/nranchev/libgeo"
+	libgeo "github.com/nranchev/go-libGeoIP"
 	"io"
 	"io/ioutil"
 	"log"
