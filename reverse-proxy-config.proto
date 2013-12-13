@@ -15,6 +15,7 @@ message TargetConfig {
 	repeated string http_host = 1;
 	repeated Backend be = 2;
 	repeated string backend_uri = 3;
+	optional uint32 timeout = 4;
 }
 
 message CountryBlacklistConfig {

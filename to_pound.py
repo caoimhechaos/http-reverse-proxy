@@ -90,8 +90,12 @@ for t in conf.target_config:
 
 		for be in t.be:
 			print("\tBackEnd\n\t\tAddress\t%(address)s\n"
-					"\t\tPort\t%(port)d\n\tEnd" %
+					"\t\tPort\t%(port)d" %
 					{'address': be.host, 'port': be.port})
+                        if t.timeout > 0:
+                            print("\t\tTimeOut %d" % t.timeout)
+
+                        print("\tEnd")
 
 		if len(t.be) == 0 and len(t.backend_uri) > 0:
 			print("\tBackEnd\n\t\tAddress\t%(address)s\n"
